@@ -1,5 +1,5 @@
-// Power Windows control for vehicle with previous manual window winders
-// and new motorised actuators fitted.
+// Power Windows control for vehicle with  manual window winders, 
+// modified for motorised actuators.
 // My case is for 2 door utility (ute). So 4 relays, 2 up/down switches required.
 // 
 // Proposed schema: 
@@ -8,7 +8,7 @@
 // Momentarially operating a Left or Right switch (or both) should drive in the correct direction until either. The winding is
 // 1. Halted by user  ie momentary action of switch
 // 2. Reaches maximum travel and halts due to current sense 
-// 3. Timesout after a fixed period. (For circumstance where window is slow but not tripping overcurrent)
+// 3. Timedout after a fixed period. (For circumstance where window is slow but not tripping overcurrent)
 // references: 
 // https://www.youtube.com/watch?v=-DV6hUSxZSk   Arduino power Window control conversion
 // https://www.youtube.com/watch?v=lisprJs5sNU   Using ACS712 Hall effect current sensor  -see code at bottom
