@@ -85,7 +85,8 @@ double Amps_R = 0;
 
 
 
-void setup() {
+void setup()
+{
   Serial.begin(115200);
 
   // Relay Outputs
@@ -213,8 +214,8 @@ void right_down()
   }
 }
 
-void right_timeout() {
-  
+void right_timeout() 
+{
   // TIMEOUT STOP RIGHT
   if (Winding_R && millis()-initTime_R >= timeout) {
     
@@ -228,8 +229,8 @@ void right_timeout() {
   }
 }
 
-void right_continuous() {
-  
+void right_continuous() 
+{
   // RIGHT CONTINUOUS (up and down)
   newTime_R = millis()- initTime_R;
 
@@ -247,8 +248,8 @@ void right_continuous() {
   oldTime_R = newTime_R;
 }
 
-void right_sensor() {
-
+void right_sensor() 
+{
   // Amps = (((analogRead(Ax)/maxAnalog)*maxmVDC)-ACSoffset)/mvperAmp
   Amps_R = abs((((analogRead(CurrentSens_R) / 1024.0) * 5000) - ACSoffset) / mVperAmp);
   
@@ -361,8 +362,8 @@ void left_down()
   }
 }
 
-void left_timeout() {
-  
+void left_timeout() 
+{ 
   // TIMEOUT STOP LEFT
   if (Winding_L && millis()-initTime_L >= timeout) {
     
@@ -376,8 +377,8 @@ void left_timeout() {
   }
 }  
 
-void left_continuous() {
-  
+void left_continuous() 
+{
   // LEFT CONTINUOUS (up and down)
   newTime_L = millis()- initTime_L;
 
@@ -395,8 +396,8 @@ void left_continuous() {
   oldTime_L = newTime_L;
 }
 
-void left_sensor() {
-
+void left_sensor() 
+{
   // Amps = (((analogRead(Ax)/maxAnalog)*maxmVDC)-ACSoffset)/mvperAmp
   Amps_L = abs((((analogRead(CurrentSens_L) / 1024.0) * 5000) - ACSoffset) / mVperAmp);
   
