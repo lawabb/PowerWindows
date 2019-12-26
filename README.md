@@ -4,10 +4,10 @@ Arduino project to add power window control to 'old' car
 Electronic control for vehicle originally with manual window winders,
 and motorised actuators retofitted.
 
-My case is for 2 door utility (ute). So require 4 relays, 2 up/down switches required.
+My case is for 2 door utility (well this isn't mine - but close -oneday). So require 4 relays, 2 up/down switches required.
 See proposed included schematic.  
  ![XR6XG.png](XR6XG.png)
-  ![](https://github.com/lawabb/PowerWindows/blob/master/Schematic_Power%20Windows_Sheet_1_20191224233008.pdf)
+  ![Schem.pdf](https://github.com/lawabb/PowerWindows/blob/master/Schematic_Power%20Windows_Sheet_1_20191224233008.pdf)
 
 Proposed schema:  
 Mount 2 switches on centre console and arduino and 4 relay board and current sense boards nearby and run 1 pair wires 
