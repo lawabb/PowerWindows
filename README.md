@@ -23,7 +23,7 @@ Mount 2 switches on centre console and arduino and 4 relay board and current sen
     1. Not block operation of other user  
     2. Operate window winding in desired direction until either  
       &nbsp;&nbsp;a. Timeout occurs  
-      &nbsp;&nbsp;b. User releases switch 
+      &nbsp;&nbsp;b. User releases switch   
       &nbsp;&nbsp;c. Current sense detects end of travel
     
       
@@ -35,7 +35,7 @@ References:
   source: forum.arduino.cc/index.php?topic=143265.0  
   float a =((float) sensorValue / 512.0 - 1.0) * 2.5 / 2 * 20;
   
-  Somewhere else...  maxAnalog = 1024 , maxmVDC = 5000, ACSoffset = 2500, mvperAmp = 100, 185 or 66
+  Somewhere else...  maxAnalog = 1024 , maxmVDC = 5000, ACSoffset = 2500, mvperAmp = 100, 185 or 66  
   Amps = (((analogRead(Ax)/maxAnalog)*maxmVDC)-ACSoffset)/mvperAmp
     
   4 relay board https://www.aliexpress.com/item/32905958885.html?spm=a2g0s.9042311.0.0.27424c4dgulU3c  
