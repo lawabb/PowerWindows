@@ -2,12 +2,12 @@
 Arduino project to add power window control to 'old' car
 
 Electronic control for vehicle originally with manual window winders,
-and motorised actuators retofitted.
+and motorised actuators retrofitted.
 
-My case is for 2 door utility (well this isn't mine - but close -oneday). So require 4 relays, 2 up/down switches required.
-See proposed included schematic.  
- ![XR6XG.png](XR6XG.png)
-  ![Schem.pdf](https://github.com/lawabb/PowerWindows/blob/master/Schematic_Power%20Windows_Sheet_1_20191224233008.pdf)
+My requirement is for 2 door ute (well this isn't mine - but close -oneday). So require 4 relays, 2 up/down switches required.
+See proposed schematic.  
+ ![XR6XG.png](XR6XG.png)     
+ ![Schem.pdf](https://github.com/lawabb/PowerWindows/blob/master/Schematic_Power%20Windows_Sheet_1_20191224233008.pdf)
 
 Proposed schema:  
 Mount 2 switches on centre console and arduino and 4 relay board and current sense boards nearby and run 1 pair wires 
@@ -23,14 +23,17 @@ Mount 2 switches on centre console and arduino and 4 relay board and current sen
     1. Not block operation of other user  
     2. Operate window winding in desired direction until either  
       &nbsp;&nbsp;a. Timeout occurs  
-      &nbsp;&nbsp;b. User releases switch  
+      &nbsp;&nbsp;b. User releases switch 
+      &nbsp;&nbsp;c. Current sense detects end of travel
+    
       
 References:  
   https://www.youtube.com/watch?v=-DV6hUSxZSk   Arduino power Window control conversion  
   https://www.youtube.com/watch?v=lisprJs5sNU   Using ACS712 Hall effect current sensor  
-   
-  float a =((float) sensorValue / 512.0 - 1.0) * 2.5 / 2 * 20;  
+  
   source: forum.arduino.cc/index.php?topic=143265.0  
+  float a =((float) sensorValue / 512.0 - 1.0) * 2.5 / 2 * 20;  
+ 
    
   4 relay board https://www.aliexpress.com/item/32905958885.html?spm=a2g0s.9042311.0.0.27424c4dgulU3c  
   current sensor https://www.aliexpress.com/item/4000205887443.html?spm=a2g0s.9042311.0.0.19764c4dDLUdVT
