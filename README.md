@@ -15,8 +15,8 @@ Mount 2 switches on centre console and arduino and 4 relay board and current sen
   
   Momentarially operating a Left or Right switch (or both) should drive in the correct direction until either.  
   The winding is  
-    1. Halted by user  ie momentary action of (either) switch  
-    2. Window reaches maximum travel and halts due to current   sense  
+    1. Halted by user  ie momentary action of (either up or down) switch  
+    2. Window reaches maximum travel and halts due to measured current being above set point. ie the electric motor stalls (I'm working on approx 5-10A, will need to test)  
     3. Timed-out after a fixed period. (For circumstance where window is slow but not tripping overcurrent)  
     
   Holding switch operated should  
@@ -31,10 +31,13 @@ References:
   https://www.youtube.com/watch?v=-DV6hUSxZSk   Arduino power Window control conversion  
   https://www.youtube.com/watch?v=lisprJs5sNU   Using ACS712 Hall effect current sensor  
   
+  Formula for using ACS712
   source: forum.arduino.cc/index.php?topic=143265.0  
-  float a =((float) sensorValue / 512.0 - 1.0) * 2.5 / 2 * 20;  
- 
-   
+  float a =((float) sensorValue / 512.0 - 1.0) * 2.5 / 2 * 20;
+  
+  Somewhere else...  maxAnalog = 1024 , maxmVDC = 5000, ACSoffset = 2500, mvperAmp = 100, 185 or 66
+  Amps = (((analogRead(Ax)/maxAnalog)*maxmVDC)-ACSoffset)/mvperAmp
+    
   4 relay board https://www.aliexpress.com/item/32905958885.html?spm=a2g0s.9042311.0.0.27424c4dgulU3c  
   current sensor https://www.aliexpress.com/item/4000205887443.html?spm=a2g0s.9042311.0.0.19764c4dDLUdVT
    
