@@ -36,7 +36,7 @@ References:
   float a =((float) sensorValue / 512.0 - 1.0) * 2.5 / 2 * 20;
   
   Somewhere else... This is what I'm going to try first. Where   
-  maxAnalog = 1024  // Analog IP range 0-1023 
+  maxAnalog = 1024  // Analog IP range 0-1023  
   maxmVDC = 5000    // DC voltage 0-5V  
   ACSoffset = 2500    // Nominal voltage with zero current (2.5V)  
   mvperAmp = 100 // mV Out per Amp in. 185 for 5A, 100 for 20A, and 66 for 30A Module  
