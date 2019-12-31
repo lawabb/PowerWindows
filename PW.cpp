@@ -67,7 +67,7 @@ void PW::Up()
       initTime = millis();  // set start debounce time
     }      
     // Wait debounce delay
-    if ((millis()- this->initTime) > debounceDelay) {
+    if ((millis()- initTime) > debounceDelay) {
       WindWindow(1);  // Wind window up          
     }     
   }
