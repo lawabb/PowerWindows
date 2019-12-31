@@ -8,7 +8,7 @@
 
 PW::PW() {}
 
-void PW::Init(byte a, byte b, byte c, byte d, byte e, bool f, bool g, bool h, bool i, bool j, uint32_t k, uint32_t l, uint32_t m, uint32_t n ) 
+void PW::Init(byte a, byte b, byte c, byte d, int e, bool f, bool g, bool h, bool i, bool j, uint32_t k, uint32_t l, uint32_t m, int32_t n ) 
 {
   RelayA = a;
   RelayB = b;
@@ -23,7 +23,9 @@ void PW::Init(byte a, byte b, byte c, byte d, byte e, bool f, bool g, bool h, bo
   initTime = k;
   newTime = l;
   oldTime = m;
-  Amps = n;
+  mAmps = n;
+
+  old_sens_time = millis();
 }
 
 void PW::WindWindow(bool direction)
@@ -56,7 +58,7 @@ void PW::WindowStop()
 
 void PW::Up()
 { 
-  // START  UP
+  // WINDOW UP START
   if (!digitalRead(SwitchUp) && !Winding)  {  //SW activated and motor not running
 
     // first read of switch
@@ -70,7 +72,7 @@ void PW::Up()
     }     
   }
 
-  // STOP  UP
+  // WINDOW UP STOP
   else if (!digitalRead(SwitchUp) && Winding) {
 
     // first read of switch
@@ -89,7 +91,7 @@ void PW::Up()
 
 void PW::Down()
 {
-  // START  DOWN
+  // WINDOW DOWN START
   if (!digitalRead(SwitchDn) && !Winding)  {  //SW activated and motor not running
     
 	  // first read of switch
@@ -103,7 +105,7 @@ void PW::Down()
     }     
   }
 
-  // STOP  DOWN
+  // WINDOW DOWN STOP
   else if (!digitalRead(SwitchDn) && Winding) {
     
     // first read of switch
@@ -125,8 +127,7 @@ void PW::Timeout()
   // TIMEOUT STOP 
   if (Winding && millis()-initTime >= timeout) {
     
-    Serial.print(millis()-initTime);
-    Serial.println(" ms  TIMEOUT_");
+    Serial.println("TIMEOUT");
     
     inhibit_stop = false;
     abort_wind = true;
@@ -137,7 +138,7 @@ void PW::Timeout()
 
 void PW::Continuous() 
 {
-  //  CONTINUOUS (up and down)
+  //  A SWITCH is CONTINUOUSLY HELD (either up or down)
   newTime = millis()- initTime;
 
   if ((!digitalRead(SwitchUp) || !digitalRead(SwitchDn)) && (newTime > oldTime + update_interval)) {
@@ -150,22 +151,45 @@ void PW::Continuous()
   else if (digitalRead(SwitchUp) && digitalRead(SwitchDn)){
     inhibit_stop = false;
     abort_wind = false;
-  }  
+  }
   oldTime = newTime;
 }
 
 void PW::Sensor() 
 {
-  // Amps = (((analogRead(Ax)/maxAnalog)*maxmVDC)-ACSoffset)/mvperAmp
-  Amps = abs((((analogRead(CurrentSens) / 1024.0) * 5000) - ACSoffset) / mVperAmp);
+  // Measure current SENSOR regularly and STOP if over setpoint
+  new_sens_time = millis();
+  if (new_sens_time > old_sens_time + 15*update_interval) {
+    old_sens_time = new_sens_time;
   
-  if (Amps >= maxAmps) {
-    Serial.print("Overcurrent - ");
+    // Amps = (((analogRead(Ax)/maxAnalog)*maxmVDC)-ACSoffset)/mvperAmp
+    int reada = analogRead(CurrentSens);
+    mAmps = (((((reada / 1024.0) * 5000) - ACSoffset) / mVperAmp) * 1000); // converted to mA
+    
+    /*
+    Serial.print(old_sens_time/1000.0);
+    Serial.print("    ");
+    Serial.print(reada);
+    Serial.print("  "); 
+    Serial.print(reada / 1024.0) ;
+    Serial.print("  ");
+    Serial.print((reada / 1024.0) * 5000);
+    Serial.print("  ");
+    Serial.print(((reada / 1024.0) * 5000) - ACSoffset);
+    Serial.print("  ");
+    Serial.print((((reada / 1024.0) * 5000) - ACSoffset) / mVperAmp);
+    Serial.print("  ");
     Serial.println(Amps);
-    
-    inhibit_stop = false;
-    abort_wind = true;
-    
-    WindowStop();
+    */
+
+    if (abs(mAmps) >= maxAmps*1000) {
+      Serial.print("Overcurrent: Amps = ");
+      Serial.println(mAmps/1000.0);
+      
+      inhibit_stop = false;
+      abort_wind = true;
+      
+      WindowStop();
+    }
   }
 }

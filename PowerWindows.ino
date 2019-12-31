@@ -30,7 +30,7 @@ bool inhibit_stop_L = false,    inhibit_stop_R = false;
 uint32_t initTime_L = 0,        initTime_R = 0;              
 uint32_t newTime_L = 0,         newTime_R = 0;
 uint32_t oldTime_L = 0,         oldTime_R = 0;
-uint32_t Amps_L = 0,            Amps_R = 0;
+int32_t mAmps_L = 0,            mAmps_R = 0;
 
 // Create Left and Right hand instances of PW (Power Windows) main functions
 PW* PW_L = new PW();
@@ -62,8 +62,8 @@ void setup()
   pinMode(CurrentSens_L, INPUT);
   pinMode(CurrentSens_R, INPUT);
 
-  PW_L->Init(RelayA_L, RelayB_L, SwitchUp_L, SwitchDn_L, CurrentSens_L, buttonPressedUp_L, buttonPressedDn_L, Winding_L, abort_wind_L, inhibit_stop_L, initTime_L, newTime_L, oldTime_L, Amps_L);
-  PW_R->Init(RelayA_R, RelayB_R, SwitchUp_R, SwitchDn_R, CurrentSens_R, buttonPressedUp_R, buttonPressedDn_R, Winding_R, abort_wind_R, inhibit_stop_R, initTime_R, newTime_R, oldTime_R, Amps_R);
+  PW_L->Init(RelayA_L, RelayB_L, SwitchUp_L, SwitchDn_L, CurrentSens_L, buttonPressedUp_L, buttonPressedDn_L, Winding_L, abort_wind_L, inhibit_stop_L, initTime_L, newTime_L, oldTime_L, mAmps_L);
+  PW_R->Init(RelayA_R, RelayB_R, SwitchUp_R, SwitchDn_R, CurrentSens_R, buttonPressedUp_R, buttonPressedDn_R, Winding_R, abort_wind_R, inhibit_stop_R, initTime_R, newTime_R, oldTime_R, mAmps_R);
 
   Serial.println("Done Setup!");
 }
@@ -74,13 +74,13 @@ void loop()
   PW_L->Down();
   PW_L->Timeout();
   PW_L->Continuous();
-  //PW_L->Sensor();
+  PW_L->Sensor();
 
   PW_R->Up();
   PW_R->Down();
   PW_R->Timeout();
   PW_R->Continuous();
-  //PW_R->Sensor();
+  PW_R->Sensor();
 
   if (PW_L->abort_wind) {   
     PW_L->WindowStop();
