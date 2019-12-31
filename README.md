@@ -51,3 +51,4 @@ Version 0.2  - Rewrite to not require interrupts. Have no current sense hardware
 Version 0.3  - Have no current sense hardware as yet, but code for it added untested.  
 &nbsp;&nbsp; TODO - code for remote operation  
 &nbsp;&nbsp; TODO - refactor code... there is plenty of code duplication  
+Version 0.4 - Have added 'PW' class to simplify code maintenance/changes and reduce duplication 

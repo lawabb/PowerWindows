@@ -1,45 +1,16 @@
-/* 
-#  Power Windows 
-Electronic control for vehicle originally with manual window winders,
-and motorised actuators retofitted.
+/*****************************************
+ *  Power Windows
+ *  (c) Lawrie Abbott 2019
+ *  
+ *  Note: delay times and other const variables
+ *  are set in PW.h
+ *  
+ *  _L for left _R for right
+ *****************************************/
 
-My case is for 2 door utility (ute). So require 4 relays, 2 up/down switches required.
-See proposed included schematic.
+#include "PW.h"
 
-Proposed schema: 
-  Mount 2 switches on centre console and arduino and 4 relay board and current sense boards nearby and run 1 pair wires 
-  carrying drive current to each door.
-  
-  Momentarially operating a Left or Right switch (or both) should drive in the correct direction until either.
-  The winding is
-    1. Halted by user  ie momentary action of (either) switch
-    2. Window reaches maximum travel and halts due to current sense 
-    3. Timesout after a fixed period. (For circumstance where window is slow but not tripping overcurrent)
-    
-  Holding switch operated should
-    1. Not block operation of other user
-    2. Operate window winding in desired direction until either 
-      a. Timeout occurs
-      b. User releases switch
-      
-References: 
-  https://www.youtube.com/watch?v=-DV6hUSxZSk   Arduino power Window control conversion
-  https://www.youtube.com/watch?v=lisprJs5sNU   Using ACS712 Hall effect current sensor
-  
-  float a =((float) sensorValue / 512.0 - 1.0) * 2.5 / 2 * 20;
-  source: forum.arduino.cc/index.php?topic=143265.0
-  
-  4 relay board https://www.aliexpress.com/item/32905958885.html?spm=a2g0s.9042311.0.0.27424c4dgulU3c
-  current sensor https://www.aliexpress.com/item/4000205887443.html?spm=a2g0s.9042311.0.0.19764c4dDLUdVT
-  
-lawabb@gmail.com
-Version 0.2  - Rewrite to not require interrupts. Have no current sense hardware as yet.. no tested code for it yet. 
-Version 0.3  - Have no current sense hardware as yet, but code for it added untested.
-  TODO code for remote operation
-  TODO - refactor code... there is plenty of code duplication
-*/
-
-#define RelayA_L 7 
+#define RelayA_L 7
 #define RelayB_L 6
 #define RelayA_R 5 
 #define RelayB_R 4
@@ -48,42 +19,22 @@ Version 0.3  - Have no current sense hardware as yet, but code for it added unte
 #define SwitchDn_L 10
 #define SwitchUp_R 9
 #define SwitchDn_R 8
-
 #define CurrentSens_L 14  // A0
 #define CurrentSens_R 13  // A1
 
-// declarations
-bool buttonPressedUp_L = false;
-bool buttonPressedDn_L = false;
-bool buttonPressedUp_R = false;
-bool buttonPressedDn_R = false;
-bool Winding_L = false;
-bool Winding_R = false;
-bool abort_wind_L = false;
-bool abort_wind_R = false;
-bool inhibit_stop_L = false;
-bool inhibit_stop_R = false;
+bool buttonPressedUp_L = false, buttonPressedUp_R = false;
+bool buttonPressedDn_L = false, buttonPressedDn_R = false;
+bool Winding_L = false,         Winding_R = false;
+bool abort_wind_L = false,      abort_wind_R = false;
+bool inhibit_stop_L = false,    inhibit_stop_R = false;
+uint32_t initTime_L = 0,        initTime_R = 0;              
+uint32_t newTime_L = 0,         newTime_R = 0;
+uint32_t oldTime_L = 0,         oldTime_R = 0;
+uint32_t Amps_L = 0,            Amps_R = 0;
 
-int direction = 0;
-const uint32_t timeout = 5000;       // max continuous wind time (milliseconds)
-const uint32_t debounceDelay = 50;   // the debounce time (ms)
-const uint32_t changeoverDelay = 200;//
- 
-uint32_t initTime_L = 0;       // used for debounce and timeout
-uint32_t initTime_R = 0;       // used for debounce and timeout
-
-uint32_t newTime_L = 0;
-uint32_t oldTime_L = 0;
-uint32_t newTime_R = 0;
-uint32_t oldTime_R = 0;
-
-const int ACSoffset = 2500;  // ie 2.5V
-const int mVperAmp = 100; // 185 for 5A, 100 for 20A, and 66 for 30A Module
-const int maxAmps = 5; // Set maximum current ie the current that will trigger winding halt 
-double Amps_L = 0;
-double Amps_R = 0;
-
-
+// Create Left and Right hand instances of PW (Power Windows) main functions
+PW* PW_L = new PW();
+PW* PW_R = new PW();
 
 void setup()
 {
@@ -111,342 +62,31 @@ void setup()
   pinMode(CurrentSens_L, INPUT);
   pinMode(CurrentSens_R, INPUT);
 
+  PW_L->Init(RelayA_L, RelayB_L, SwitchUp_L, SwitchDn_L, CurrentSens_L, buttonPressedUp_L, buttonPressedDn_L, Winding_L, abort_wind_L, inhibit_stop_L, initTime_L, newTime_L, oldTime_L, Amps_L);
+  PW_R->Init(RelayA_R, RelayB_R, SwitchUp_R, SwitchDn_R, CurrentSens_R, buttonPressedUp_R, buttonPressedDn_R, Winding_R, abort_wind_R, inhibit_stop_R, initTime_R, newTime_R, oldTime_R, Amps_R);
+
   Serial.println("Done Setup!");
 }
-
-/****************************************************************************************
- RIGHT SIDE FUNCTIONS
-*/
-
-void WindWindow_R(bool direction)
-{ 
-  Serial.print("Winding RIGHT ");
-  Serial.println(direction);
-  
-  Winding_R = true;
-  
-  // Set relays to drive in required direction
-  digitalWrite(RelayA_R, direction);
-  digitalWrite(RelayB_R, !direction);
-  delay(changeoverDelay);
-}
-
-void WindowStop_R()
-{
-  Serial.println("STOP RIGHT");
-  
-  // reset winding, button state, abort flags
-  Winding_R = false;
-  buttonPressedUp_R = false;
-  buttonPressedDn_R = false;
-  
-  // set both relays to same state (and de-energised)
-  digitalWrite(RelayA_R, HIGH);
-  digitalWrite(RelayB_R, HIGH);
-  delay(changeoverDelay);
-}
-
-void right_up()
-{
-  // START RIGHT UP
-  if (!digitalRead(SwitchUp_R) && !Winding_R)  {  //SW activated and motor not running
-
-    // first read of switch
-    if (!buttonPressedUp_R) {
-      buttonPressedUp_R = true; // set button pressed flag
-      initTime_R = millis();  // set start debounce time
-    }   
-    // Wait debounce delay
-    if ((millis()- initTime_R) > debounceDelay) {
-      WindWindow_R(1);  // Wind window up          
-    }     
-  }
-
-  // STOP RIGHT UP
-  else if (!digitalRead(SwitchUp_R) && Winding_R) {
-    
-    // first read of switch
-    if (!buttonPressedUp_R) {
-      buttonPressedUp_R = true; // set button pressed flag
-      initTime_R = millis();  // set start debounce time
-    }
-    
-    if (!digitalRead(SwitchUp_R) && Winding_R )  {
-      // Wait debounce delay
-      if (((millis()- initTime_R) > debounceDelay) && !inhibit_stop_R) {       
-        WindowStop_R();  
-      }
-    }
-  }
-}
-
-void right_down()
-{
-  // START RIGHT DOWN
-  if (!digitalRead(SwitchDn_R) && !Winding_R)  {  //SW activated and motor not running
-
-    // first read of switch
-    if (!buttonPressedDn_R) {
-      buttonPressedDn_R = true; // set button pressed flag
-      initTime_R = millis();  // set start debounce time
-    }   
-    // Wait debounce delay
-    if ((millis()- initTime_R) > debounceDelay) {     
-      WindWindow_R(0);  // Wind window down          
-    }     
-  }
-
-  // STOP RIGHT DOWN
-  else if (!digitalRead(SwitchDn_R) && Winding_R) {
-    
-    // first read of switch
-    if (!buttonPressedDn_R) {
-      buttonPressedDn_R = true; // set button pressed flag
-      initTime_R = millis();  // set start debounce time
-    }
-    
-    if (!digitalRead(SwitchDn_R) && Winding_R )  {
-      // Wait debounce delay
-      if (((millis()- initTime_R) > debounceDelay) && !inhibit_stop_R) {       
-        WindowStop_R();  
-      }
-    }
-  }
-}
-
-void right_timeout() 
-{
-  // TIMEOUT STOP RIGHT
-  if (Winding_R && millis()-initTime_R >= timeout) {
-    
-    Serial.print(millis()-initTime_R);
-    Serial.println(" ms  TIMEOUT. _RIGHT");
-
-    inhibit_stop_R = false;
-    abort_wind_R = true;
-    
-    WindowStop_R();   
-  }
-}
-
-void right_continuous() 
-{
-  // RIGHT CONTINUOUS (up and down)
-  newTime_R = millis()- initTime_R;
-
-  if ((!digitalRead(SwitchUp_R) || !digitalRead(SwitchDn_R)) && (newTime_R > oldTime_R+20)) {
-    inhibit_stop_R = false;
-  
-    if ((!digitalRead(SwitchUp_R) || !digitalRead(SwitchDn_R)) && !abort_wind_R) {
-      inhibit_stop_R = true;
-    }
-  }
-  else if (digitalRead(SwitchUp_R) && digitalRead(SwitchDn_R)){
-    inhibit_stop_R = false;
-    abort_wind_R = false;
-  }  
-  oldTime_R = newTime_R;
-}
-
-void right_sensor() 
-{
-  // Amps = (((analogRead(Ax)/maxAnalog)*maxmVDC)-ACSoffset)/mvperAmp
-  Amps_R = abs((((analogRead(CurrentSens_R) / 1024.0) * 5000) - ACSoffset) / mVperAmp);
-  
-  if (Amps_R >= maxAmps) {
-    Serial.print("Overcurrent_R - ");
-    Serial.println(Amps_R);
-    
-    inhibit_stop_R = false;
-    abort_wind_R = true;
-    
-    WindowStop_R();
-  }
-}
-
-/*************************************************************************************
- LEFT SIDE FUNCTIONS
-*/
-
-void WindWindow_L(bool direction)
-{ 
-  Serial.print("Winding LEFT ");
-  Serial.println(direction);
-  
-  Winding_L = true;
-  
-  // Set relays to drive in required direction
-  digitalWrite(RelayA_L, direction);
-  digitalWrite(RelayB_L, !direction);
-  delay(changeoverDelay);  // needed and beneficial!
-}
-
-void WindowStop_L()
-{ 
-  Serial.println("STOP LEFT");
-  
-  // reset winding, button state, abort flags
-  Winding_L = false;
-  buttonPressedUp_L = false;
-  buttonPressedDn_L = false;
-  
-  // set both relays to same state (and de-energised)
-  digitalWrite(RelayA_L, HIGH);
-  digitalWrite(RelayB_L, HIGH);
-  delay(changeoverDelay);
-}
-
-void left_up()
-{ 
-  // START LEFT UP
-  if (!digitalRead(SwitchUp_L) && !Winding_L)  {  //SW activated and motor not running
-
-    // first read of switch
-    if (!buttonPressedUp_L) {
-      buttonPressedUp_L = true; // set button pressed flag
-      initTime_L = millis();  // set start debounce time
-    }      
-    // Wait debounce delay
-    if ((millis()- initTime_L) > debounceDelay) {
-      WindWindow_L(1);  // Wind window up          
-    }     
-  }
-
-  // STOP LEFT UP
-  else if (!digitalRead(SwitchUp_L) && Winding_L) {
-
-    // first read of switch
-    if (!buttonPressedUp_L) {
-      buttonPressedUp_L = true; // set button pressed flag
-      initTime_L = millis();  // set start debounce time
-    }
-    if (!digitalRead(SwitchUp_L) && Winding_L)  {
-      // Wait debounce delay
-      if (((millis()- initTime_L) > debounceDelay) && !inhibit_stop_L) {
-        WindowStop_L();  
-      }
-    }
-  }
-}
-
-void left_down()
-{
-  // START LEFT DOWN
-  if (!digitalRead(SwitchDn_L) && !Winding_L)  {  //SW activated and motor not running
-
-    // first read of switch
-    if (!buttonPressedDn_L) {
-      buttonPressedDn_L = true; // set button pressed flag
-      initTime_L = millis();  // set start debounce time
-    }   
-    if ((millis()- initTime_L) > debounceDelay) {
-      WindWindow_L(0);  // Wind window down          
-    }     
-  }
-
-  // STOP LEFT DOWN
-  else if (!digitalRead(SwitchDn_L) && Winding_L) {
-    
-    // first read of switch
-    if (!buttonPressedDn_L) {
-      buttonPressedDn_L = true; // set button pressed flag
-      initTime_L = millis();  // set start debounce time
-    }
-    
-    if (!digitalRead(SwitchDn_L) && Winding_L )  {
-      // Wait debounce delay
-      if (((millis()- initTime_L) > debounceDelay) && !inhibit_stop_L) {
-        WindowStop_L();  
-      }
-    }
-  }
-}
-
-void left_timeout() 
-{ 
-  // TIMEOUT STOP LEFT
-  if (Winding_L && millis()-initTime_L >= timeout) {
-    
-    Serial.print(millis()-initTime_L);
-    Serial.println(" ms  TIMEOUT_LEFT");
-    
-    inhibit_stop_L = false;
-    abort_wind_L = true;
-    
-    WindowStop_L();
-  }
-}  
-
-void left_continuous() 
-{
-  // LEFT CONTINUOUS (up and down)
-  newTime_L = millis()- initTime_L;
-
-  if ((!digitalRead(SwitchUp_L) || !digitalRead(SwitchDn_L)) && (newTime_L > oldTime_L+20)) {
-    inhibit_stop_L = false;
-  
-    if ((!digitalRead(SwitchUp_L) || !digitalRead(SwitchDn_L)) && !abort_wind_L) {
-      inhibit_stop_L = true;
-    }
-  }
-  else if (digitalRead(SwitchUp_L) && digitalRead(SwitchDn_L)){
-    inhibit_stop_L = false;
-    abort_wind_L = false;
-  }  
-  oldTime_L = newTime_L;
-}
-
-void left_sensor() 
-{
-  // Amps = (((analogRead(Ax)/maxAnalog)*maxmVDC)-ACSoffset)/mvperAmp
-  Amps_L = abs((((analogRead(CurrentSens_L) / 1024.0) * 5000) - ACSoffset) / mVperAmp);
-  
-  if (Amps_L >= maxAmps) {
-    Serial.print("Overcurrent_L - ");
-    Serial.println(Amps_L);
-    
-    inhibit_stop_L = false;
-    abort_wind_L = true;
-    
-    WindowStop_L();
-  }
-}
-
-/*************************************************************************************************
-  MAIN LOOP
-*/
-
 void loop()
 {
-  left_up();
-  left_down();
-  left_timeout();
-  left_continuous(); //check for continuous button down every 20ms
-  
-  right_up(); 
-  right_down();
-  right_continuous(); //check for continuous button down every 20ms 
-  right_timeout();
-  
-  //left_sensor();
-  //right_sensor();
 
-  // needed to prevent 'continuous' timeout toggling. 
-  // TODO Investigation needed as to mechanism...?
-  if (abort_wind_L) {   
-    WindowStop_L();
-  } 
-  if (abort_wind_R) {
-    WindowStop_R();
+  PW_L->Up();
+  PW_L->Down();
+  PW_L->Timeout();
+  PW_L->Continuous();
+  //PW_L->Sensor();
+
+  PW_R->Up();
+  PW_R->Down();
+  PW_R->Timeout();
+  PW_R->Continuous();
+  //PW_R->Sensor();
+
+  if (PW_L->abort_wind) {   
+    PW_L->WindowStop();
   }
-}  
-  
-  
-  
-  
- 
 
-
-
-
-
+  if (PW_R->abort_wind) {   
+    PW_R->WindowStop();
+  }  
+} 
