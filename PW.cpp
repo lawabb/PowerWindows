@@ -4,11 +4,12 @@
  *****************************************/
 
 #include "PW.h"
+#include "utility.h"
 
 
 PW::PW() {}
 
-void PW::Init(byte a, byte b, byte c, byte d, int e, bool f, bool g, bool h, bool i, bool j, uint32_t k, uint32_t l, uint32_t m, int32_t n ) 
+void PW::Init(byte a, byte b, byte c, byte d, int e, bool f, bool g, bool h, bool i, bool j, uint32_t k, uint32_t l, uint32_t m, int32_t n, bool o ) 
 {
   RelayA = a;
   RelayB = b;
@@ -24,15 +25,15 @@ void PW::Init(byte a, byte b, byte c, byte d, int e, bool f, bool g, bool h, boo
   newTime = l;
   oldTime = m;
   mAmps = n;
+  side = o;
 
   old_sens_time = millis();
 }
 
 void PW::WindWindow(bool direction)
 { 
-  Serial.print("Winding  ");
-  Serial.println(direction);
-  
+  serial_print_val("Winding", direction, side);
+
   Winding = true;
   
   // Set relays to drive in required direction
@@ -43,7 +44,7 @@ void PW::WindWindow(bool direction)
 
 void PW::WindowStop()
 { 
-  Serial.println("STOP ");
+  serial_print("STOP", side);
   
   // reset winding, button state flags
   Winding = false;
@@ -127,7 +128,7 @@ void PW::Timeout()
   // TIMEOUT STOP 
   if (Winding && millis()-initTime >= timeout) {
     
-    Serial.println("TIMEOUT");
+    serial_print("TIMEOUT", side);
     
     inhibit_stop = false;
     abort_wind = true;
@@ -166,7 +167,7 @@ void PW::Sensor()
     int reada = analogRead(CurrentSens);
     mAmps = (((((reada / 1024.0) * 5000) - ACSoffset) / mVperAmp) * 1000); // converted to mA
     
-    /*
+    /*  // for debugging
     Serial.print(old_sens_time/1000.0);
     Serial.print("    ");
     Serial.print(reada);
@@ -179,12 +180,11 @@ void PW::Sensor()
     Serial.print("  ");
     Serial.print((((reada / 1024.0) * 5000) - ACSoffset) / mVperAmp);
     Serial.print("  ");
-    Serial.println(Amps);
+    Serial.println(mAmps);
     */
 
     if (abs(mAmps) >= maxAmps*1000) {
-      Serial.print("Overcurrent: Amps = ");
-      Serial.println(mAmps/1000.0);
+      serial_print_uval("Overcurrent: Amps = ", mAmps/1000.0, side);
       
       inhibit_stop = false;
       abort_wind = true;

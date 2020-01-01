@@ -31,6 +31,7 @@ uint32_t initTime_L = 0,        initTime_R = 0;
 uint32_t newTime_L = 0,         newTime_R = 0;
 uint32_t oldTime_L = 0,         oldTime_R = 0;
 int32_t mAmps_L = 0,            mAmps_R = 0;
+bool left = 1;
 
 // Create Left and Right hand instances of PW (Power Windows) main functions
 PW* PW_L = new PW();
@@ -62,8 +63,10 @@ void setup()
   pinMode(CurrentSens_L, INPUT);
   pinMode(CurrentSens_R, INPUT);
 
-  PW_L->Init(RelayA_L, RelayB_L, SwitchUp_L, SwitchDn_L, CurrentSens_L, buttonPressedUp_L, buttonPressedDn_L, Winding_L, abort_wind_L, inhibit_stop_L, initTime_L, newTime_L, oldTime_L, mAmps_L);
-  PW_R->Init(RelayA_R, RelayB_R, SwitchUp_R, SwitchDn_R, CurrentSens_R, buttonPressedUp_R, buttonPressedDn_R, Winding_R, abort_wind_R, inhibit_stop_R, initTime_R, newTime_R, oldTime_R, mAmps_R);
+  PW_L->Init(RelayA_L, RelayB_L, SwitchUp_L, SwitchDn_L, CurrentSens_L, buttonPressedUp_L, buttonPressedDn_L, 
+      Winding_L, abort_wind_L, inhibit_stop_L, initTime_L, newTime_L, oldTime_L, mAmps_L, left);
+  PW_R->Init(RelayA_R, RelayB_R, SwitchUp_R, SwitchDn_R, CurrentSens_R, buttonPressedUp_R, buttonPressedDn_R, 
+      Winding_R, abort_wind_R, inhibit_stop_R, initTime_R, newTime_R, oldTime_R, mAmps_R, !left);
 
   Serial.println("Done Setup!");
 }
