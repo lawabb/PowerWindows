@@ -1,6 +1,6 @@
 /*****************************************
  *  PW
- *  (c) Lawrie Abbott 2019
+ *  (c) Lawrie Abbott 2020
  *****************************************/
 
 #include "PW.h"
@@ -9,52 +9,48 @@
 
 PW::PW() {}
 
-void PW::Init(byte a, byte b, byte c, byte d, int e, bool f, bool g, bool h, bool i, bool j, uint32_t k, uint32_t l, uint32_t m, int32_t n, bool o ) 
+void PW::Init(byte a, byte b, byte c, byte d, int e, bool o ) 
 {
   RelayA = a;
   RelayB = b;
   SwitchUp = c;
   SwitchDn = d;
   CurrentSens = e;
-  buttonPressedUp = f;
-  buttonPressedDn = g;
-  Winding = h;
-  abort_wind = i;
-  inhibit_stop = j;
-  initTime = k;
-  newTime = l;
-  oldTime = m;
-  mAmps = n;
   side = o;
-
-  old_sens_time = millis();
 }
 
 void PW::WindWindow(bool direction)
 { 
-  serial_print_val("Winding", direction, side);
-
-  Winding = true;
+  if (!inhibit_drive) {
+    serial_print_val("Winding", direction, side);
   
-  // Set relays to drive in required direction
-  digitalWrite(RelayA, direction);
-  digitalWrite(RelayB, !direction);
-  delay(changeoverDelay);
+    Winding = true;
+    
+    // Set relays to drive in required direction
+    digitalWrite(RelayA, direction);
+    digitalWrite(RelayB, !direction);
+    delay(changeoverDelay);
+  }
 }
 
 void PW::WindowStop()
 { 
-  serial_print("STOP", side);
-  
-  // reset winding, button state flags
-  Winding = false;
-  buttonPressedUp = false;
-  buttonPressedDn = false;
-  
-  // set both relays to same state (and de-energised)
-  digitalWrite(RelayA, HIGH);
-  digitalWrite(RelayB, HIGH);
-  delay(changeoverDelay);
+  if (!inhibit_stop) {
+    serial_print("STOP", side);
+    
+    // reset winding, button state flags
+    Winding = false;
+    abort_wind = false;
+    timeout_counting = false;
+    
+    // set both relays to same state (and de-energised)
+    digitalWrite(RelayA, HIGH);
+    digitalWrite(RelayB, HIGH);
+    delay(changeoverDelay);
+  }
+ else {
+   serial_print("STOP inhibited", side);
+ }
 }
 
 void PW::Up()
@@ -69,23 +65,21 @@ void PW::Up()
     }      
     // Wait debounce delay
     if ((millis()- initTime) > debounceDelay) {
+      buttonPressedUp = false; // set button pressed flag
       WindWindow(1);  // Wind window up          
-    }     
-  }
-
+    }
+  }    
   // WINDOW UP STOP
-  else if (!digitalRead(SwitchUp) && Winding) {
-
+  else if (!digitalRead(SwitchUp) && Winding ) {
+ 
     // first read of switch
     if (!buttonPressedUp) {
       buttonPressedUp = true; // set button pressed flag
       initTime = millis();  // set start debounce time
     }
-    if (!digitalRead(SwitchUp) && Winding)  {
-      // Wait debounce delay
-      if (((millis()- initTime) > debounceDelay) && !inhibit_stop) {
-        WindowStop();  
-      }
+    if (((millis()- initTime) > debounceDelay) ) {
+      buttonPressedUp = false; // set button pressed flag
+      WindowStop();  
     }
   }
 }
@@ -94,73 +88,88 @@ void PW::Down()
 {
   // WINDOW DOWN START
   if (!digitalRead(SwitchDn) && !Winding)  {  //SW activated and motor not running
-    
+
 	  // first read of switch
     if (!buttonPressedDn) {
       buttonPressedDn = true; // set button pressed flag
-      initTime = millis();  // set start debounce time
+      initTime = millis();  // set start debounce time   
     } 
     // Wait debounce delay
     if ((millis()- initTime) > debounceDelay) {
+      buttonPressedDn = false;
       WindWindow(0);  // Wind window down          
-    }     
-  }
-
+    }
+  }     
   // WINDOW DOWN STOP
   else if (!digitalRead(SwitchDn) && Winding) {
-    
+
     // first read of switch
     if (!buttonPressedDn) {
-      buttonPressedDn = true; // set button pressed flag
-      initTime = millis();  // set start debounce time
-    }  
-    if (!digitalRead(SwitchDn) && Winding )  {
-      // Wait debounce delay
-      if (((millis()- initTime) > debounceDelay) && !inhibit_stop) {
-        WindowStop();  
-      }
+       buttonPressedDn = true; // set button pressed flag
+       initTime = millis();  // set start debounce time
+    } 
+    
+    if (((millis()- initTime) > debounceDelay) ) {
+       buttonPressedDn = false; // set button pressed flag
+       WindowStop();  
     }
   }
 }
 
 void PW::Timeout() 
 { 
-  // TIMEOUT STOP 
-  if (Winding && millis()-initTime >= timeout) {
-    
-    serial_print("TIMEOUT", side);
-    
+  // TIMEOUT STOP - not working on button held down
+  // serial_print_val("timeout", (millis()-initTime), side);
+
+  if (Winding && !timeout_counting) {
+    initTimeTimeout = millis(); 
+    timeout_counting = true;
+  }
+
+  if (timeout_counting && Winding && (millis()-initTimeTimeout >= timeout)) {
+    serial_print_val("TIMEOUT", (millis()-initTimeTimeout), side);
+    inhibit_drive = true;
     inhibit_stop = false;
     abort_wind = true;
-    
-    WindowStop();
   }
 }  
 
 void PW::Continuous() 
 {
-  //  A SWITCH is CONTINUOUSLY HELD (either up or down)
-  newTime = millis()- initTime;
-
-  if ((!digitalRead(SwitchUp) || !digitalRead(SwitchDn)) && (newTime > oldTime + update_interval)) {
-    inhibit_stop = false;
+  //  check if a a SWITCH is CONTINUOUSLY HELD 
+  newTime = millis();
   
-    if ((!digitalRead(SwitchUp) || !digitalRead(SwitchDn)) && !abort_wind) {
+  if (Winding && (newTime >= oldTime + update_interval)) {
+
+    // if switch is  activated disable stop function 
+    if (!(digitalRead(SwitchUp)) || !(digitalRead(SwitchDn))) {
       inhibit_stop = true;
+      abort_wind = false;
     }
+
+    //when switch is off allow to abort winding
+    if (((digitalRead(SwitchUp)) && (digitalRead(SwitchDn))) && inhibit_stop){
+      serial_print("Switches OFF ", side);
+      inhibit_stop = false;
+      abort_wind = true; 
+      inhibit_drive = false;
+    }
+  } 
+  if (newTime >= oldTime + update_interval) {
+    oldTime = newTime;
+  }  
+  // disable drive after 'button held' timeout until button is released
+  if ((digitalRead(SwitchUp)) && (digitalRead(SwitchDn))) {
+      //serial_print("Drive Inhibit OFF ", side);
+      inhibit_drive = false;
   }
-  else if (digitalRead(SwitchUp) && digitalRead(SwitchDn)){
-    inhibit_stop = false;
-    abort_wind = false;
-  }
-  oldTime = newTime;
 }
 
 void PW::Sensor() 
 {
   // Measure current SENSOR regularly and STOP if over setpoint
   new_sens_time = millis();
-  if (new_sens_time > old_sens_time + 15*update_interval) {
+  if (new_sens_time > old_sens_time + 300) {  // 300ms delay
     old_sens_time = new_sens_time;
   
     // Amps = (((analogRead(Ax)/maxAnalog)*maxmVDC)-ACSoffset)/mvperAmp
