@@ -48,9 +48,9 @@ void PW::WindowStop()
     digitalWrite(RelayB, HIGH);
     delay(changeoverDelay);
   }
- else {
-   serial_print("STOP inhibited", side);
- }
+  else {
+    serial_print("STOP inhibited", side);
+  }
 }
 
 void PW::Up()
@@ -160,8 +160,8 @@ void PW::Continuous()
   }  
   // disable drive after 'button held' timeout until button is released
   if ((digitalRead(SwitchUp)) && (digitalRead(SwitchDn))) {
-      //serial_print("Drive Inhibit OFF ", side);
-      inhibit_drive = false;
+     //serial_print("Drive Inhibit OFF ", side);
+     inhibit_drive = false;
   }
 }
 
@@ -169,28 +169,22 @@ void PW::Sensor()
 {
   // Measure current SENSOR regularly and STOP if over setpoint
   new_sens_time = millis();
-  if (new_sens_time > old_sens_time + 300) {  // 300ms delay
+  if (new_sens_time > old_sens_time + sensor_interval) {  
     old_sens_time = new_sens_time;
-  
+
+    // Formula being used
     // Amps = (((analogRead(Ax)/maxAnalog)*maxmVDC)-ACSoffset)/mvperAmp
-    int reada = analogRead(CurrentSens);
-    mAmps = (((((reada / 1024.0) * 5000) - ACSoffset) / mVperAmp) * 1000); // converted to mA
     
-    /*  // for debugging
-    Serial.print(old_sens_time/1000.0);
-    Serial.print("    ");
-    Serial.print(reada);
-    Serial.print("  "); 
-    Serial.print(reada / 1024.0) ;
-    Serial.print("  ");
-    Serial.print((reada / 1024.0) * 5000);
-    Serial.print("  ");
-    Serial.print(((reada / 1024.0) * 5000) - ACSoffset);
-    Serial.print("  ");
-    Serial.print((((reada / 1024.0) * 5000) - ACSoffset) / mVperAmp);
-    Serial.print("  ");
-    Serial.println(mAmps);
-    */
+    float reada = analogRead(CurrentSens);
+
+    // Get maximum reading for Vcc
+    Amax = analogRead(AMAX);
+    // Amax = 1020; // for test
+
+    mAmps = (((((reada/(Amax-fudge)) * 5000.0) - 2500.0) / mVperAmp) * 1000); // converted to mA
+
+    // for debugging
+    //serial_print_uval(" ", mAmps, side);
 
     if (abs(mAmps) >= maxAmps*1000) {
       serial_print_uval("Overcurrent: Amps = ", mAmps/1000.0, side);
