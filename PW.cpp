@@ -19,16 +19,16 @@ void PW::Init(byte a, byte b, byte c, byte d, int e, bool o )
   side = o;
 }
 
-void PW::WindWindow(bool direction)
+void PW::WindWindow(bool up)
 { 
   if (!inhibit_drive) {
-    serial_print_val("Winding", direction, side);
+    serial_print_val("Winding", up, side);
   
     Winding = true;
     
     // Set relays to drive in required direction
-    digitalWrite(RelayA, direction);
-    digitalWrite(RelayB, !direction);
+    digitalWrite(RelayA, up);
+    digitalWrite(RelayB, !up);
     delay(changeoverDelay);
   }
 }
@@ -36,7 +36,7 @@ void PW::WindWindow(bool direction)
 void PW::WindowStop()
 { 
   if (!inhibit_stop) {
-    serial_print("STOP", side);
+    //serial_print("STOP", side);
     
     // reset winding, button state flags
     Winding = false;
@@ -44,11 +44,12 @@ void PW::WindowStop()
     timeout_counting = false;
     
     // set both relays to same state (and de-energised)
-    digitalWrite(RelayA, HIGH);
-    digitalWrite(RelayB, HIGH);
+    digitalWrite(RelayA, AT_REST);
+    digitalWrite(RelayB, AT_REST);
+    
     delay(changeoverDelay);
-  }
-  else {
+    
+  } else {
     serial_print("STOP inhibited", side);
   }
 }
@@ -57,6 +58,13 @@ void PW::Up()
 { 
   // WINDOW UP START
   if (!digitalRead(SwitchUp) && !Winding)  {  //SW activated and motor not running
+
+   // reset 'end of travel' flag for down direction
+   // bail out if already at end of travel up
+    end_of_travel_down = false;
+    if (end_of_travel_up) {
+      return;
+    }
 
     // first read of switch
     if (!buttonPressedUp) {
@@ -88,7 +96,14 @@ void PW::Down()
 {
   // WINDOW DOWN START
   if (!digitalRead(SwitchDn) && !Winding)  {  //SW activated and motor not running
-
+    
+   // reset 'end of travel' flag for up direction
+   // bail out if already at end of travel down
+    end_of_travel_up = false;
+    if (end_of_travel_down) {
+      return;
+    }
+    
 	  // first read of switch
     if (!buttonPressedDn) {
       buttonPressedDn = true; // set button pressed flag
@@ -118,7 +133,7 @@ void PW::Down()
 
 void PW::Timeout() 
 { 
-  // TIMEOUT STOP - not working on button held down
+  // TIMEOUT STOP
   // serial_print_val("timeout", (millis()-initTime), side);
 
   if (Winding && !timeout_counting) {
@@ -149,7 +164,7 @@ void PW::Continuous()
 
     //when switch is off allow to abort winding
     if (((digitalRead(SwitchUp)) && (digitalRead(SwitchDn))) && inhibit_stop){
-      serial_print("Switches OFF ", side);
+      serial_print("Switch OFF ", side);
       inhibit_stop = false;
       abort_wind = true; 
       inhibit_drive = false;
@@ -179,10 +194,11 @@ void PW::Sensor()
 
     // Get maximum reading for Vcc
     Amax = analogRead(AMAX);
-    // Amax = 1020; // for test
+    //Serial.println(Amax);
+    //Amax = 1020; // for test
 
     mAmps = (((((reada/(Amax-fudge)) * 5000.0) - 2500.0) / mVperAmp) * 1000); // converted to mA
-
+    
     // for debugging
     //serial_print_uval(" ", mAmps, side);
 
@@ -191,6 +207,14 @@ void PW::Sensor()
       
       inhibit_stop = false;
       abort_wind = true;
+      
+      if (mAmps > 0) {           // down
+        end_of_travel_down = true;
+        end_of_travel_up = false;
+      } else {                  // up
+        end_of_travel_down = false;
+        end_of_travel_up = true;
+      }
       
       WindowStop();
     }
