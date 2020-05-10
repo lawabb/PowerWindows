@@ -53,6 +53,6 @@ Version 0.3  - Have no current sense hardware as yet, but code for it added unte
 &nbsp;&nbsp; TODO - refactor code... there is plenty of code duplication  
 Version 0.4 - Have added 'PW' class to simplify code maintenance/changes and reduce duplication  
 Version 0.5  Changes to  SENSOR - not tested with hardware  
-Version 0.6 Debugging aids added 
+Version 0.6 Debugging aids added  
 Version 0.8 Tested with components on PCB - one side only - not in car. All working. Max current to be checked in vehicle so not exceed 20A 
             End of travel flags added to help prevent retrying winding when already at end of travel
