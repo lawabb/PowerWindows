@@ -68,7 +68,26 @@ void serial_print_uval(const char* print_string, int32_t print_val, bool side) {
     }
 }
 
-
+void serial_print_bool(const char* print_string, bool print_bool, bool side) {
+    const char* side_string;
+    if (side) {
+      side_string = "Left";
+    } else {
+      side_string = "Right";
+    }
+    if (Serial) {
+          Serial.print("[");
+          Serial.print(millis());
+          Serial.print("] ");
+          Serial.print(print_string);
+          Serial.print(" ");
+          Serial.print(print_bool);
+          Serial.print(" ");
+          Serial.print(side_string);
+          Serial.print("\n");
+    }
+}
+/*/
 // clever print function
 //https://gist.github.com/EleotleCram/eb586037e2976a8d9884
 int aprintf(char *str, ...) {
@@ -109,3 +128,4 @@ int aprintf(char *str, ...) {
 
 	return count;
 }
+*/

@@ -1,6 +1,8 @@
+#include <Arduino_BuiltIn.h>
+
 /*****************************************
  *  Power Windows
- *  (c) Lawrie Abbott 2020
+ *  (c) Lawrie Abbott 2026
  *  
  *  Tested with Arduino Nano
  *  Note: Set variables in PW.h
@@ -9,6 +11,7 @@
  *****************************************/
 
 #include "PW.h"
+#include "utility.h"
 
 #define RelayA_L 7
 #define RelayB_L 6
@@ -58,29 +61,36 @@ void setup()
   PW_L->Init(RelayA_L, RelayB_L, SwitchUp_L, SwitchDn_L, CurrentSens_L, left);
   PW_R->Init(RelayA_R, RelayB_R, SwitchUp_R, SwitchDn_R, CurrentSens_R, !left);
   
-  Serial.print("Version ");
+  Serial.print("Version: ");
   Serial.println(SoftwareVersion);
 }  
 
 void loop()
 {
+  PW_L-> SwitchStateUp();
+  PW_L-> SwitchStateDn();
   PW_L->Up();
   PW_L->Down();
   PW_L->Timeout();
-  PW_L->Continuous();
   PW_L->Sensor();
 
+  if (PW_L->abort_wind) {
+    Serial.println("Aborting Winding L");
+    PW_L->WindowStop();
+    delay(2000);
+    }
+
+  PW_R-> SwitchStateUp();
+  PW_R-> SwitchStateDn();
   PW_R->Up();
   PW_R->Down();
   PW_R->Timeout();
-  PW_R->Continuous();
   PW_R->Sensor();
-
-  if (PW_L->abort_wind) {   
-    PW_L->WindowStop();
-  }
-
-  if (PW_R->abort_wind) {   
+  
+  if (PW_R->abort_wind) {
+    Serial.println("Aborting Winding R"); 
     PW_R->WindowStop();
-  }  
+    // if button stuck after timeout
+    delay(2000);
+    }  
 } 
