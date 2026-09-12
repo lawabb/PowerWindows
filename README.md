@@ -61,5 +61,5 @@ Version 0.90 Finally installed in car and found a lot not right. Some code refac
             Main Changes - Switches only read once per loop
             - Overcurrent test done once per loop
             - Current reference is to 1/2V Vcc instead of Vcc
-            Note: Found using non snap action push button switches (used for testing puposes), plays havoc with ability
-            to detect/reset button held.
+            Note: Found using non snap action push button switches (used for testing puposes),
+            plays havoc with ability to detect/reset button held.
