@@ -54,12 +54,12 @@ Version 0.3  - Have no current sense hardware as yet, but code for it added unte
 Version 0.4 - Have added 'PW' class to simplify code maintenance/changes and reduce duplication  
 Version 0.5  Changes to  SENSOR - not tested with hardware  
 Version 0.6 Debugging aids added  
-Version 0.8 Tested with components on PCB - one side only - not in car. All working. Max current to be checked in vehicle so not exceed 20A
-            End of travel flags added to help prevent retrying winding when already at end of travel
-Version 0.90 Finally installed in car and found a lot not right. Some code refactoring,
-            low power mode, and input from remote keyfob, still to be done.
-            Main Changes - Switches only read once per loop
-            - Overcurrent test done once per loop
-            - Current reference is to 1/2V Vcc instead of Vcc
-            Note: Found using non snap action push button switches (used for testing puposes),
-            plays havoc with ability to detect/reset button held.
+Version 0.8 Tested with components on PCB - one side only - not in car. All working. Max current to be checked in vehicle so not exceed 20A  
+            End of travel flags added to help prevent retrying winding when already at end of travel  
+Version 0.90 Finally installed in car and found a lot not right. Some code refactoring,  
+            low power mode, and input from remote keyfob, still to be done.  
+            Main Changes - Switches only read once per loop  
+            - Overcurrent test done once per loop  
+            - Current reference is to 1/2V Vcc instead of Vcc  
+            Note: Found using non snap action push button switches (used for testing puposes),  
+            plays havoc with ability to detect/reset button held.  
