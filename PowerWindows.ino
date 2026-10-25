@@ -24,6 +24,7 @@
 #define SwitchDn_R 8
 #define CurrentSens_L A0
 #define CurrentSens_R A1
+#define AZero A2
 
 bool left = 1;
 
@@ -72,7 +73,7 @@ void loop()
   PW_L->Up();
   PW_L->Down();
   PW_L->Timeout();
-  PW_L->Sensor();
+  PW_L->Sensor(CurrentSens_L, ACS_L);
 
   if (PW_L->abort_wind) {
     Serial.println("Aborting Winding L");
@@ -85,7 +86,7 @@ void loop()
   PW_R->Up();
   PW_R->Down();
   PW_R->Timeout();
-  PW_R->Sensor();
+  PW_R->Sensor(CurrentSens_R, ACS_R);
   
   if (PW_R->abort_wind) {
     Serial.println("Aborting Winding R"); 

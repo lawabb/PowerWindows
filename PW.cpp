@@ -149,6 +149,9 @@ void PW::Up()
 
    // reset 'end of travel' flag for down direction
    // bail out if already at end of travel up
+
+    serial_print_val("End of travel up", end_of_travel_up,side);
+    serial_print_val("End of travel down", end_of_travel_down,side);
     end_of_travel_down = false;
     if (end_of_travel_up) {
       return;
@@ -167,10 +170,14 @@ void PW::Down()
   // WINDOW DOWN START
   if (buttonPressedDn && !Winding)  {  
     
+
+    serial_print_val("End of travel up1", end_of_travel_up,side);
+    serial_print_val("End of travel down1", end_of_travel_down,side);
     // reset 'end of travel' flag for up direction
     // bail out if already at end of travel down
     end_of_travel_up = false;
     if (end_of_travel_down) {
+    
       return;
       }
     WindWindow(0);  // Wind window down
@@ -251,31 +258,39 @@ void PW::ContinuousDn()
     }
 }
 
-void PW::Sensor() 
+void PW::Sensor(int Sens, int ACS) 
 {
   // Measure current SENSOR every loop  and STOP if over setpoint
 
-  int reada = analogRead(CurrentSens);
-  //Serial.println(reada);
+  int reada = analogRead(Sens);
 
   // Azero is being measured at 1/2 Vcc, should be approx 1024/2 = 512
-  int azero = analogRead(AZero);
-  //Serial.println(azero);
+  // fudging this as is fluctuating too much
+  // azero set for approx current readings on up and down 
+  //int azero1 = analogRead(AZero);
+  //serial_print_val("azero = ", azero, side);
+  int azero = ACS;
+  //int azero = 512;
 
-  int rawCurrent = reada - azero;
-  //Serial.println(rawCurrent);
+  float rawCurrent = abs(reada - azero);
 
   //Note: rawCurrent can be + or - depending direction of motor
   // and does'nt matter for overcurrent situation
-  mAmps = abs(rawCurrent)*5.0/1024*10000;
+  float mAmps = (rawCurrent)*5.0/1024*10000;
+
+  // info fro debugging
+  if (mAmps > 1500) {
+    serial_print_val("Measured mAmps = ", mAmps, side);
+    //serial_print_val("azero1 = ", azero1, side);
+    }
 
   if (mAmps >= maxAmps*1000) {
-    serial_print_uval("Overcurrent: Amps = ", mAmps/1000.0, side);
+    serial_print_val("Overcurrent: Amps = ", mAmps/1000.0, side);
     
     inhibit_stop = false;
     abort_wind = true;
     
-    if (mAmps > 0) {           // down
+    if ((reada - azero) > 0) {           // down
       end_of_travel_down = true;
       end_of_travel_up = false;
       } 
@@ -285,9 +300,11 @@ void PW::Sensor()
     }
     
     WindowStop();
-    delay(1000);
+    //delay(1000);
     }
 }
+
+
 
 // for debugging
 void PW::PrintStatus()

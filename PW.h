@@ -8,10 +8,10 @@
 
 #ifndef _PW_H
 #define _PW_H
-#define AZero A2
+
 
 // const
-const char SoftwareVersion[4] = "0.90" ;
+const char SoftwareVersion[4] = "0.92" ;
 const uint32_t timeout = 8000;       // set this for max allowable continuous wind time (milliseconds)
                                      // needs to be longer than wind up/down times. My 1990s motor takes 5.5 - 6 seconds
                                      // added for safety
@@ -21,10 +21,12 @@ const uint32_t changeoverDelay = 100;  // added delay on change of relay state (
 const uint32_t update_interval = 100;  // set for how often the continuous function checks are done (ms)
 const uint32_t button_held = 400;   // time between testing if button is held down                     
 const int mVperAmp = 100; // 185 for 5A, 100 for 20A, and 66 for 30A Module - change to suit ACS712 module used
-const float maxAmps = 8; // Amps - Set this for required maximum current ie the current that will trigger winding halt
+const float maxAmps = 7; // Amps - Set this for required maximum current ie the current that will trigger winding halt
                        // No load connection should read O Amps
 const bool AT_REST = false;  // set condition so that relay common terminals are 0 Volts in standby condition
 const bool up = true;  // 
+const int ACS_L = 504;  // ACS712 inconsistency - adjust per install
+const int ACS_R = 496;  // ACS712 inconsistency - adjust per install
 
 class PW {
 	
@@ -75,7 +77,7 @@ public:
   void Timeout();
   void ContinuousUp();
   void ContinuousDn();
-  void Sensor();
+  void Sensor(int Sens, int ACS);
   void WindowStop();
   void Init(byte RelayA, byte RelayB, byte SwitchUp, byte SwitchDn, int CurrentSens, bool side);
   void PrintStatus();
